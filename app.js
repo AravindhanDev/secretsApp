@@ -82,8 +82,7 @@ passport.use(new GoogleStrategy({
 passport.use(new FacebookStrategy({
     clientID: process.env.FB_CLIENT_ID,
     clientSecret: process.env.FB_CLIENT_SECRET,
-    callbackURL: "http://localhost:3000/auth/facebook/secrets",
-    profileFields: ['id', 'displayName', 'photos', 'email']
+    callbackURL: "http://localhost:3000/auth/facebook/secrets"
   },
   function(accessToken, refreshToken, profile, cb) {
     console.log(profile);
@@ -105,9 +104,7 @@ app.get('/auth/google',
   }));
 
 app.get('/auth/facebook',
-  passport.authenticate('facebook', {
-    scope: 'read_stream'
-  }));
+  passport.authenticate('facebook'));
 
 app.get("/auth/google/secrets",
   passport.authenticate('google', {
