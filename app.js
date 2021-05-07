@@ -32,7 +32,7 @@ app.use(passport.initialize()); //use initialize passport
 app.use(passport.session()); //use passport session to dealing with this sessions
 
 
-mongoose.connect("mongodb+srv://admin-noob:NoobieTest123@cluster0.o3y78.mongodb.net/userDB", {
+mongoose.connect("mongodb://localhost:27017/userDB", {
   useNewUrlParser: true,
   useUnifiedTopology: true
 });
@@ -42,7 +42,8 @@ const userSchema = new mongoose.Schema({
   email: String,
   password: String,
   googleId: String,
-  facebookId: String
+  facebookId: String,
+  secret: String
 });
 
 userSchema.plugin(passportLocalMongoose);
@@ -64,8 +65,8 @@ passport.deserializeUser(function(id, done) {
 }); //allows passport to be able to crumble key and discover the message inside who the user is so we can authenticated them.
 
 passport.use(new GoogleStrategy({
-    clientID: process.env.GL_CLIENT_ID,
-    clientSecret: process.env.GL_CLIENT_SECRET,
+    clientID: process.env.CLIENT_ID,
+    clientSecret: process.env.CLIENT_SECRET,
     callbackURL: "http://localhost:3000/auth/google/secrets",
     userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo"
   },
@@ -134,12 +135,30 @@ app.get('/register', function(req, res) {
 });
 
 app.get('/secrets', function(req, res) {
+  User.find({
+    "secret": {
+      $ne: null
+    }
+  }, function(err, foundUser) {
+    if (err) {
+      console.log(err);
+    } else {
+      if (foundUser) {
+        res.render('secrets', {usersWithSecrets: foundUser})
+      }
+    }
+  });
+});
+
+
+app.get('/submit', function(req, res) {
   if (req.isAuthenticated()) {
-    res.render("secrets");
+    res.render("submit");
   } else {
     res.redirect('/login');
   }
-});
+})
+
 
 app.get('/logout', function(req, res) {
   req.logout();
@@ -188,12 +207,24 @@ app.post('/login', function(req, res) {
 });
 
 
-let port = process.env.PORT;
-if(port == null || port == "") {
-  port = 3000;
-}
+app.post('/submit', function(req, res) {
+  let submittedSecret = req.body.secret;
 
+  User.findById(req.user.id, function(err, foundUser) {
+    if (err) {
+      console.log(err);
+    } else {
+      if (foundUser) {
+        foundUser.secret = submittedSecret
+        foundUser.save(function() {
+          res.redirect('/secrets');
+        });
+      }
+    }
+  });
+  // console.log(req.user.id);
+});
 
-app.listen(port, function() {
+app.listen(3000, function() {
   console.log("server started successfully!");
 })
